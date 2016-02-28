@@ -1,0 +1,30 @@
+{
+    "name": "globe/apiexample",
+    "authors": [
+        {
+            "name": "Adrian Gonzalez",
+            "email": "adrigonle@gmail.com",
+            "homepage": "http://www.nodexploit.com",
+            "role": "Developer"
+        }, {
+            "name": "Nicolas Vargas",
+            "email": "nvortega92@gmail.com",
+            "homepage": "http://www.nodexploit.com",
+            "role": "Developer"
+        }
+    ],
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/soutoner/phalcon-devtools"
+        }
+    ],
+    "require": {
+        "vlucas/phpdotenv": "^2.2"
+    },
+    "require-dev": {
+        "phalcon/devtools": "dev-travisci",
+        "codeception/base": "*",
+        "fzaninotto/faker": "^1.5"
+    }
+}
