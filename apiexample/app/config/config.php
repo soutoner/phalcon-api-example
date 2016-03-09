@@ -26,11 +26,12 @@ $dotenv->required([
 
 $main_config = new \Phalcon\Config(array(
     'database' => array(
-        'adapter'   => 'Mysql',
+        'adapter'   => 'mysql',
         'host'      => getenv('DB_HOST'),
         'username'  => getenv('DB_USER'),
         'password'  => getenv('DB_PASS'),
         'dbname'    => getenv('DB_NAME'),
+        'port'      => 3306,
         'charset'   => 'utf8',
     ),
     'application' => array(
@@ -42,15 +43,11 @@ $main_config = new \Phalcon\Config(array(
     ),
     'namespaces' => array(
         'App'       => APP_PATH . '/app/',
-        'Faker'     => APP_PATH . '/vendor/fzaninotto/faker/src/Faker/',
     ),
     'debug'  => false,
 ));
 
 // Merge configs depending on the app environment
-if ($env) {
-    $env_config = include APP_PATH . '/app/config/environments/' . $env . '.php';
-    return $main_config->merge($env_config);
-} else {
-    return $main_config;
-}
+$env_config = include APP_PATH . '/app/config/environments/' . $env . '.php';
+
+return $main_config->merge($env_config);

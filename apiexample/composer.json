@@ -13,17 +13,12 @@
             "role": "Developer"
         }
     ],
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/soutoner/phalcon-devtools"
-        }
-    ],
     "require": {
-        "vlucas/phpdotenv": "^2.2"
+        "vlucas/phpdotenv": "^2.2",
+        "robmorgan/phinx": "^0.5.1"
     },
     "require-dev": {
-        "phalcon/devtools": "dev-travisci",
+        "phalcon/devtools": "dev-master",
         "codeception/base": "*",
         "fzaninotto/faker": "^1.5"
     }

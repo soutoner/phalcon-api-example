@@ -19,23 +19,18 @@ Vagrant.configure(2) do |config|
   #config.vm.network :forwarded_port, guest: 80, host: 8080
 
   # Optional (Remove if desired)
-  config.vm.provider :virtualbox do |v|
+  config.vm.provider :virtualbox do |vb|
     # How much RAM to give the VM (in MB)
     # -----------------------------------
-    v.customize ["modifyvm", :id, "--memory", "2048"]
-
-    # Comment the bottom two lines to disable muli-core in the VM
-    v.customize ["modifyvm", :id, "--cpus", "2"]
-    v.customize ["modifyvm", :id, "--ioapic", "on"]
+    vb.memory = "2048"
   end
 
   # Provisioning Script
   # --------------------
-  config.vm.provision "shell", path: "bootstrap/init.sh"
+  config.vm.provision "shell", path: "bootstrap/provision.sh", args: ["127.0.0.1", "apiexample"]
 
   # Synced Folder
   # --------------------
   config.vm.synced_folder ".", "/vagrant/", :mount_options => [ "dmode=777", "fmode=666" ]
-  config.vm.synced_folder "./www", "/vagrant/www/", :mount_options => [ "dmode=775", "fmode=644" ], :owner => 'www-data', :group => 'www-data'
-
+  config.vm.synced_folder "./apiexample", "/vagrant/apiexample/", :mount_options => [ "dmode=775", "fmode=644" ], :owner => 'www-data', :group => 'www-data'
 end

@@ -1,15 +1,55 @@
 #!/bin/bash
 # Using Trusty64 Ubuntu
 
+function valid_ip()
+{
+    local  ip=$1
+    local  stat=1
+
+    if [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$   ]]; then
+        OIFS=$IFS
+        IFS='.'
+        ip=($ip)
+        IFS=$OIFS
+        [[ ${ip[0]} -le 255 && ${ip[1]} -le 255 \
+            && ${ip[2]} -le 255 && ${ip[3]} -le 255 ]]
+        stat=$?
+    fi
+    return $stat
+}
+
+#######################
+
+USAGE_TOOL="Usage: $0 <LOCAL_IP> <PROJECT_NAME>"
+
+if [ "$EUID" -ne 0  ]
+then echo "Please run as root"
+    exit
+fi
+
+if [ -z "$1"   ]
+then echo "$USAGE_TOOL"
+    exit
+fi
+
+if [ -z "$2"   ]
+then echo "$USAGE_TOOL"
+    exit
+fi
+
+if valid_ip $1;
+then
+    echo "good";
+else
+    echo "Bad IP address"
+    exit;
+fi
+
 #
-# Add PHP, Phalcon, PostgreSQL and libsodium repositories
+# Add PHP 5.6, Phalcon repositories
 #
 apt-add-repository -y ppa:ondrej/php5-5.6
 apt-add-repository -y ppa:phalcon/stable
-apt-add-repository -y ppa:chris-lea/libsodium
-touch /etc/apt/sources.list.d/pgdg.list
-echo -e "deb http://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main" | tee -a /etc/apt/sources.list.d/pgdg.list > /dev/null
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
 
 rm /var/lib/apt/lists/* -f
 apt-get update
@@ -40,7 +80,7 @@ apt-get -q -y install mysql-server-5.6 mysql-client-5.6 php5-mysql
 #
 # Apache
 #
-apt-get install -y apache2 libapache2-mod-php5
+apt-get install -y apache2 libapache2-mod-php5 openssl
 
 
 #
@@ -58,15 +98,22 @@ pecl channel-update pecl.php.net
 apt-get -y install php-apc php5-apcu
 echo 'apc.enable_cli = 1' | tee -a /etc/php5/mods-available/apcu.ini > /dev/null
 
-#
-# Memcached
-#
-apt-get install -y memcached php5-memcached php5-memcache
+# XDebug
 
-#
-# Beanstalkd
-#
-apt-get -y install beanstalkd
+read -r -d '' XDEBUG_CONF << ROTO
+;zend_extension='xdebug.so'
+xdebug.remote_enable=1
+xdebug.remote_handler=dbgp
+xdebug.remote_mode=req
+xdebug.remote_host=$1
+xdebug.remote_port=9000
+xdebug.remote_log=/var/log/xdebug.log
+xdebug.remote_autostart=1
+ROTO
+
+echo "$XDEBUG_CONF" > /etc/php5/apache2/conf.d/20-xdebug.ini
+
+service apache2 restart
 
 #
 # YAML
@@ -82,39 +129,14 @@ php5enmod yaml
 apt-get install -y curl htop git dos2unix unzip vim grc gcc make re2c libpcre3 libpcre3-dev lsb-core autoconf
 
 #
-# Libsodium
-#
-apt-get install -y libsodium-dev
-pecl install -a libsodium < /dev/null &
-echo 'extension=libsodium.so' | tee /etc/php5/mods-available/libsodium.ini > /dev/null
-php5enmod libsodium
-
-#
-# Zephir
-#
-git clone --depth=1 git://github.com/phalcon/zephir.git
-cd zephir
-./install -c
-
-#
 # Install Phalcon Framework
 #
-git clone --depth=1 git://github.com/phalcon/cphalcon.git
-cd cphalcon
-zephir build
+apt-get install -y php5-dev libpcre3-dev gcc make
+git clone git://github.com/phalcon/cphalcon.git
+cd cphalcon/build
+sudo ./install
 echo -e "extension=phalcon.so" | tee /etc/php5/mods-available/phalcon.ini > /dev/null
 php5enmod phalcon
-cd ..
-
-#
-# Redis
-#
-# Allow us to remote from Vagrant with port
-#
-apt-get install -y redis-server redis-tools php5-redis
-cp /etc/redis/redis.conf /etc/redis/redis.bkup.conf
-sed -i 's/bind 127.0.0.1/bind 0.0.0.0/' /etc/redis/redis.conf
-service redis-server restart
 
 #
 # MySQL configuration
@@ -140,30 +162,20 @@ mv composer.phar /usr/local/bin/composer
 # Apache VHost
 #
 cd ~
-echo '<VirtualHost *:80>
-        DocumentRoot /vagrant/www
-        ErrorLog  /vagrant/www/projects-error.log
-        CustomLog /vagrant/www/projects-access.log combined
+echo "<VirtualHost *:80>
+        DocumentRoot /vagrant/$2
+        ErrorLog  /vagrant/$2/log/projects-error.log
+        CustomLog /vagrant/$2/log/projects-access.log combined
 </VirtualHost>
 
-<Directory "/vagrant/www">
+<Directory \"/vagrant/$2\">
         Options Indexes Followsymlinks
         AllowOverride All
         Require all granted
-</Directory>' > vagrant.conf
+</Directory>" > vagrant.conf
 
 mv vagrant.conf /etc/apache2/sites-available
 a2enmod rewrite
-
-
-#
-# Install Phalcon DevTools
-#
-cd /home/vagrant/
-git clone https://github.com/phalcon/phalcon-devtools.git
-cd phalcon-devtools
-sudo ln -s /home/vagrant/phalcon-devtools/phalcon.php /usr/bin/phalcon
-sudo chmod ugo+x /usr/bin/phalcon
 
 #
 # Update PHP Error Reporting
@@ -180,7 +192,20 @@ sudo sed -i '/\[Session\]/a session.save_path = "/tmp"' /etc/php5/apache2/php.in
 sudo a2ensite vagrant
 sudo a2dissite 000-default
 sudo service apache2 restart
-sudo service mongodb restart
+
+#
+# Setting aliases to avoid xdebug for composer
+#
+read -r -d '' ALIASES << ROTO
+# Load xdebug Zend extension with php command
+alias php='php -dzend_extension=xdebug.so'
+# PHPUnit needs xdebug for coverage. In this case, just make an alias with php command prefix.
+alias phpunit='php $(which phpunit)'
+ROTO
+
+echo "$ALIASES" >> /home/vagrant/.bash_aliases
+
+echo "alias sudo='sudo '" >> /home/vagrant/.bashrc
 
 #
 #  Cleanup

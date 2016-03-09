@@ -1,4 +1,4 @@
-# Phalcon-api-example
+# apiexample
 
 REST API scaffolding for Phalcon 2 framework.
 
@@ -36,10 +36,36 @@ This will take care of creating the test database (inside `config.php`), seeding
 sudo php vendor/bin/codecept run
 ```
 
-# Seed database
+# Migrations
+
+## Create migration
 
 ```
 # pwd: /vagrant/www/apiexample (guest)
+sudo php vendor/bin/phinx create <MigrationName>
+```
+
+## Run migrations
+
+```
+# pwd: /vagrant/www/apiexample (guest)
+php app/cli.php migrate
+```
+
+# Seeds 
+
+## Create seeder
+
+```
+# pwd: /vagrant/www/apiexample (guest)
+sudo php vendor/bin/phinx seed:create <Model>Seeder
+```
+
+## Run seeding
+
+```
+# pwd: /vagrant/www/apiexample (guest)
+# It creates database if it's not created yet
 php app/cli.php seed
 ```
 
