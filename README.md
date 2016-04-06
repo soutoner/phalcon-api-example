@@ -22,11 +22,6 @@ General structure for a RESTful PHP API project.
       public/
       scripts/
       tests/
-      .gitignore
-	  .travis.yml
-      composer.json
-	  README.md
-      Vagrantfile
 
 -------
 
