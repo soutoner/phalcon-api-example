@@ -1,4 +1,4 @@
-.idea/
-.vagrant/
-*.log
 .DS_Store
+.idea/
+vendor/
+composer.lock

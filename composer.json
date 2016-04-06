@@ -1,0 +1,25 @@
+{
+    "name": "globe/php-api-structure",
+    "description": "General structure for a RESTful PHP API project.",
+    "authors": [
+        {
+            "name": "Adrian Gonzalez",
+            "email": "adrigonle@gmail.com",
+            "homepage": "http://www.nodexploit.com",
+            "role": "Developer"
+        }, {
+            "name": "Nicolas Vargas",
+            "email": "nvortega92@gmail.com",
+            "homepage": "http://www.nodexploit.com",
+            "role": "Developer"
+        }
+    ],
+    "license": "MIT",
+    "require": {},
+    "require-dev": {},
+    "autoload": {
+        "psr-4": {
+            "App\\": "app"
+        }
+    }
+}
